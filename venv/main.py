@@ -41,18 +41,24 @@ def container_stats(id):
     container_stats_resp = metadata_response(v2_stats_endpoint + "/" + id)
     return container_stats_resp.json()
 
-def put_metrics(metric_value, container_id):
+def put_metrics(metric_name, metric_value, container_id):
+    if metric_name == "memory":
+        unit = "Bytes"
+    elif metric_name == "cpu":
+        unit = "Percent"
+    else:
+        unit = "None"
     cloudwatch.put_metric_data(
         MetricData=[
             {
-                'MetricName': 'MemoryUtilization',
+                'MetricName': metric_name,
                 'Dimensions': [
                     {
                         'Name': 'Container ID',
                         'Value': container_id
                     }
                 ],
-                'Unit': 'None',
+                'Unit': unit,
                 'Value': metric_value
             },
         ],
@@ -91,5 +97,7 @@ container_memory_usage = container_stats_resp["memory_stats"]["usage"]
 while True:
     container_stats_resp = container_stats(container_id)
     container_memory_usage = container_stats_resp["memory_stats"]["usage"]
-    put_metrics(container_memory_usage,container_id)
+    container_cpu_usage = container_stats_resp["cpu_stats"]["cpu_usage"]["total_usage"]
+    put_metrics("memory",container_memory_usage,container_id)
+    put_metrics("cpu",container_cpu_usage,container_id)
     time.sleep(15)
